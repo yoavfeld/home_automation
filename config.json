@@ -1,0 +1,22 @@
+{
+    "port": 5000,
+    "password": "12345",
+    "buttons": [
+        {
+            "name": "boiler",
+            "gpio": 19,
+            "stopAfter": 2400
+        },
+        {
+            "name": "boiler morning start",
+            "gpio": 19,
+            "startOnTime": 7,  
+            "stopAfter": 2400
+        },
+        {
+            "name": "",
+            "gpio": 21,
+            "stopAfter": 1
+        }
+    ]
+}
