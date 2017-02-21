@@ -1,20 +1,20 @@
 {
     "port": 5000,
-    "password": "12345",
+    "password": "nitzush",
     "buttons": [
         {
-            "name": "boiler",
+            "type": "timer",
             "gpio": 19,
-            "stopAfter": 2400
+            "delay": 2400
         },
         {
-            "name": "boiler morning start",
+            "type": "schedule",
             "gpio": 19,
-            "startOnTime": 7,  
-            "stopAfter": 2400
+            "startHour": 7,  
+            "delay": 2400
         },
         {
-            "name": "",
+            "type": "",
             "gpio": 21,
             "stopAfter": 1
         }

@@ -15,5 +15,8 @@
   "bugs": {
     "url": "https://github.com/yoavfeld/home_automation/issues"
   },
-  "homepage": "https://github.com/yoavfeld/home_automation"
+  "homepage": "https://github.com/yoavfeld/home_automation",
+  "dependencies": {
+    "lodash": "^4.17.4"
+  }
 }
