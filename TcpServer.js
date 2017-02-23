@@ -9,7 +9,7 @@ const StringDecoder = require('string_decoder')
 
 function TcpServer(config, CommandsExecutor) {
     this._config = config
-    this._commandsExecutor = new CommandsExecutor(this._config)
+    this._commandsExecutor = new CommandsExecutor(this._config, this.sendResponse)
     this._server = net.createServer(_.bind(this._onConnecionStart, this))
     this._sockets = {}
     this._decoder = new StringDecoder.StringDecoder('utf8')
@@ -34,7 +34,7 @@ p._onConnecionStart = function(socket) {
         console.log(socket.remoteAddress + " disconnected")
         delete self._sockets[socket.id]
     });
-    this._sendResponse(socket, {ctx: 'sendcode', status: ''})
+    this.sendResponse(socket, {ctx: 'sendcode', status: ''})
 }
 
 p._onRequest = function(socket, data) { 
@@ -45,21 +45,22 @@ p._onRequest = function(socket, data) {
         if (socket.auth) {
             console.log('got good pass')
             let status = this._commandsExecutor.getStatus()
-            this._sendResponse(socket, {ctx:'password', status: status})
+            //console.log(status)
+            this.sendResponse(socket, {ctx:'password', status: status})
         } else {
             console.log('got bad pass')
-            this._sendResponse(socket, {ctx: 'password', status:'codenotok'})
+            this.sendResponse(socket, {ctx: 'password', status:'codenotok'})
             socket.end()
         }
     } else if (socket.auth) {
-        console.log('authorized')
-        response = this._commandsExecutor.execute(reqParams)
+        let status = this._commandsExecutor.execute(reqParams)
+        let response = {ctx: 'update', status: status}
         this.sendResponse(socket, response)
     }
 };
 
 p._parseRequest = function(data) {
-    console.log('_parseRequest' + data)
+    //console.log('_parseRequest' + data)
     let info = this._decoder.write(data)
     let list = info.split(' ')
     let params = {
@@ -73,7 +74,7 @@ p._authenticate = function(socket, password) {
      return (password === this._config.password) 
 }
 
-p._sendResponse = function(socket, response) {
+p.sendResponse = function(socket, response) {
     socket.write(JSON.stringify(response));
 }
 
