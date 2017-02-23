@@ -1,14 +1,15 @@
 'use strict';
 
-//const gpio = require('rpi-gpio');
+const gpio = require('rpi-gpio');
 const _ = require('lodash')
-const sleep = require('sleep')
 const debug = require('debug')
+const sleep = require('sleep')
 
 var p = CommandsExecutor.prototype;
 
-function CommandsExecutor(config) {
+function CommandsExecutor(config, updateFunc) {
     this._config = config
+    this._updateAll = updateFunc
     this._status = []
     this._timeouts = []
     this._debug = debug('CommandsExecutor');
@@ -20,22 +21,29 @@ p._initGPIO = function() {
     for (let i = 0; i < this._config.numOfButtons; i++) {
         let button = this._config.buttons[i]
         if (button && button.pin) {
-            gpio.setup(button.pin, gpio.DIR_OUT, write);
-            this._setGPIO(button.pin, false)
+            gpio.setup(button.pin, gpio.DIR_OUT, _.bind(this._onSetupDone, this, button.pin));
         }
         this._status[i] = false
     }
-}
+};
+
+p._onSetupDone = function(pin, err) {
+    this._checkError()
+    this._setGPIO(pin, false)
+};
+
+p._checkError = function(err) {
+    if (err) {
+        throw err;
+    }
+    debug('gpio action done')
+};
 
 p._setGPIO = function(pin, status) {
-    this._debug('_setGPIO', arguments)
-    gpio.write(pin, (status ? 1 : 0), function(err) {
-        if (err) {
-            throw err;
-        } 
-        console.log('pin ' + pin + ' changed to ' + status);
-    });
-}
+    console.log('_setGPIO', arguments)
+    gpio.write(pin, (status ? 1 : 0), this._checkError)
+    this._updateAll()
+};
 
 p._handleTimer = function(index, conf) {
     this._debug('_handleTimer', arguments)
@@ -47,26 +55,28 @@ p._handleTimer = function(index, conf) {
     }
     if (timeoutId != null) {
         this._stopTimer(index, timeoutId)
+        this._setGPIO(conf.pin, false)    
         return
     }
-    this._setGPIO(conf.pin, true)
     this._status[index] = true
+    this._setGPIO(conf.pin, true)
     this._timeouts[index] = setTimeout(_.bind(this._turnOff, this, index, conf.pin), conf.delay*1000)
 }
 
 p._turnOff = function(index, pin) {
     this._debug('_turnOff', arguments)
-    this._setGPIO(pin, false)
     this._status[index] = false
+    this._setGPIO(pin, false)
     this._timeouts[index] = null
-}
+};
 
 p._stopTimer = function(index, timeoutId){
-    this._debug('_stopTimer', arguments)
+    this._debug('_stopTimer', index)
     clearTimeout(timeoutId)
     this._timeouts[index] = null 
     this._status[index] = false
-}
+};
+
 p._handleSchedule = function(index, conf) {
     this._debug('_handleSchedule', arguments)
     let status = this._status[index]
@@ -77,12 +87,15 @@ p._handleSchedule = function(index, conf) {
     }
     if (timeoutId != null) {
         this._stopTimer(index, timeoutId)
+        this._updateAll()
         return
     }
     this._status[index] = true
     let id = setInterval(_.bind(this._startOnTime, this, conf.button, conf.startHour, index), 60*1000)
     this._timeouts[index] = id
-}   
+    this._updateAll()
+};
+
 p._startOnTime = function(index, hour, parentIndex) {
     this._debug('_startOnTime', arguments)
     let conf = this._config.buttons[index]
@@ -93,7 +106,7 @@ p._startOnTime = function(index, hour, parentIndex) {
         this._timeouts[parentIndex] = null
         this._status[parentIndex] = false
     }
-}
+};
 
 p.execute = function(params) {
     this._debug('execute', arguments)
@@ -114,10 +127,10 @@ p.execute = function(params) {
             break;
         case 'get':
             if (params.value = 'status') {
-                return this._status
+                return this.getStatus()
             }
     }
-}
+};
 
 p.getStatus = function() {
     this._debug('getStatus')
@@ -126,6 +139,6 @@ p.getStatus = function() {
         status[i] = (this._status[i] ? 0 : 1) // an opposite condition
     }
     return status
-}
+};
 
 module.exports = CommandsExecutor;
