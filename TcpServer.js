@@ -6,14 +6,17 @@ const config = require('./config.json')
 const CommandsExecutor = require('./CommandsExecutor.js')
 const StringDecoder = require('string_decoder')
 const debug = require('debug')
+const log4js = require('log4js')
 
 function TcpServer(config, CommandsExecutor) {
+    this._debug = debug('TcpServer')
+    this._log = log4js.getLogger('TcpServer');
     this._config = config
     this._commandsExecutor = new CommandsExecutor(this._config, _.bind(this._updateAll, this))
+    this._commandsExecutor.Init()
     this._server = net.createServer(_.bind(this._onConnecionStart, this))
     this._sockets = {}
     this._decoder = new StringDecoder.StringDecoder('utf8')
-    this._debug = debug('TcpServer')
 }
 
 var p = TcpServer.prototype;
@@ -26,13 +29,13 @@ p._onConnecionStart = function(socket) {
     this._debug('_onConnecionStart')
     let self = this
     socket.auth = false
-    console.log(socket.remoteAddress + " connected")
+    this._log.info(socket.remoteAddress + " connected")
     self._sockets[socket.remoteAddress] = socket
     socket.on('data', function (data) {
         self._onRequest(socket, data)
     });
     socket.on('end', function () {
-        console.log(socket.remoteAddress + " disconnected")
+        self._log.info(socket.remoteAddress + " disconnected")
         delete self._sockets[socket.id]
     });
     this.sendResponse(socket, {ctx: 'sendcode', status: ''})
@@ -48,7 +51,7 @@ p._onRequest = function(socket, data) {
             let status = this._commandsExecutor.getStatus()
             this.sendResponse(socket, {ctx:'password', status: status})
         } else {
-            console.log('got wrong password')
+            this._log.info('got wrong password')
             this.sendResponse(socket, {ctx: 'password', status:'codenotok'})
             socket.end()
         }
@@ -73,7 +76,9 @@ p._updateAll = function() {
     let status = this._commandsExecutor.getStatus()
     for (let id in this._sockets) {
         let socket = this._sockets[id]
-        this.sendResponse(socket, {ctx: 'update', status:status})
+        try {
+            this.sendResponse(socket, {ctx: 'update', status:status})
+        } catch (err){}
     }
 };
 
