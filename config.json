@@ -1,22 +1,22 @@
 {
     "port": 5000,
     "password": "nitzush",
+    "numOfButtons": 8,
     "buttons": [
         {
             "type": "timer",
-            "gpio": 19,
+            "pin": 21,
             "delay": 2400
         },
         {
             "type": "schedule",
-            "gpio": 19,
-            "startHour": 7,  
-            "delay": 2400
-        },
+            "button": 0,
+            "startHour": 7
+        },{},{},{},{},{},
         {
-            "type": "",
-            "gpio": 21,
-            "stopAfter": 1
+            "type": "timer",
+            "pin": 19,
+            "delay": 1
         }
     ]
 }
