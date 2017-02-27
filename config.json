@@ -1,6 +1,6 @@
 {
     "port": 5000,
-    "password": "nitzush",
+    "password": "1234",
     "numOfButtons": 8,
     "buttons": [
         {
